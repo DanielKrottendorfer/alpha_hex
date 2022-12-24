@@ -20,6 +20,10 @@ class hexPosition (object):
     def play(self,move):
         self.makeMoove(move, self.player)
 
+    def playRandom (self):
+        from random import choice
+        chosen = choice(self.getActionSpace())
+        self.play(chosen)
 
     def makeMoove (self, coord, player_num):
         """
@@ -91,15 +95,6 @@ class hexPosition (object):
             return [self.recodeCoordinates(action) for action in actions]
         else:
             return(actions)
-    
-    def playRandom (self, player):
-        """
-        This method returns a uniformly randomized valid moove for the chosen player (player=1, or player=2).
-        """
-        from random import choice
-        chosen = choice(self.getActionSpace())
-        self.board[chosen[0]][chosen[1]] = player
-        self.player = 1 if player==2 else 2
         
     def _randomMatch (self, evaluate_when_full=False):
         """

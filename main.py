@@ -11,16 +11,12 @@ if(__name__ == "__main__"):
     while myboard.winner == 0:
         
         ms = mcts.mctsagent(state = myboard)
-        ms.search(1.0)
-        move = ms.best_move()
-
-        if move == -1 :
-            break
+        ms.search(1.0)        
+        myboard.makeMoove(ms.best_move(),1)
         
-        myboard.makeMoove(move,1)
-
-        
-        myboard.playRandom(2)
+        myboard.playRandom()
         
         myboard.printBoard()
+        
+        myboard.calc_winner()
     
