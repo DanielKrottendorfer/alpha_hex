@@ -10,27 +10,50 @@ import torch
 from torch import nn
 from torch import optim
 
-size = 3
+size = 5
 
 input_dim = size
-hidden_dim = 1250
+hidden_dim = 5
 output_dim = size
 
 class NeuralNetwork(nn.Module):
+    
+
     def __init__(self):
         super(NeuralNetwork, self).__init__()
-        self.layer_1 = nn.Linear(input_dim, hidden_dim)
-        self.layer_2 = nn.Linear(hidden_dim, hidden_dim)
-        self.layer_3 = nn.Linear(hidden_dim, hidden_dim)
-        self.layer_4 = nn.Linear(hidden_dim, output_dim)
+        self.conv1 = nn.Conv2d(in_channels=1, out_channels=128,kernel_size=(3,3),padding=1)
+        self.conv2 = nn.Conv2d(in_channels=128, out_channels=8,  kernel_size=(1,1))
+        self.conv3 = nn.Conv2d(in_channels= 8, out_channels=1,  kernel_size=(1,1))
+        # self.layer_2 = nn.Linear(hidden_dim, hidden_dim)
+        # self.layer_3 = nn.Linear(hidden_dim, hidden_dim)
+        # self.layer_4 = nn.Linear(hidden_dim, output_dim)
        
-    def forward(self, x):
-        x = F.relu(self.layer_1(x))
-        x = self.layer_2(x) 
-        x = self.layer_3(x)
-        x = F.relu(self.layer_4(x))
+    def forward(self, x): 
+        x = x.view(1, 1, x.shape[0], x.shape[1])
+        x = F.leaky_relu(self.conv1(x))
+        x = F.leaky_relu(self.conv2(x))
+        x = F.relu(self.conv3(x))
+        # x = self.layer_2(x) 
+        # x = self.layer_3(x)
+        # x = F.relu(self.layer_4(x))
         x = F.normalize(x)
-        return x
+        return x[0][0]
+
+# class NeuralNetwork(nn.Module):
+#     def __init__(self):
+#         super(NeuralNetwork, self).__init__()
+#         self.layer_1 = nn.Linear(input_dim, hidden_dim)
+#         self.layer_2 = nn.Linear(hidden_dim, hidden_dim)
+#         self.layer_3 = nn.Linear(hidden_dim, hidden_dim)
+#         self.layer_4 = nn.Linear(hidden_dim, output_dim)
+       
+#     def forward(self, x):
+#         x = F.relu(self.layer_1(x))
+#         x = self.layer_2(x) 
+#         x = self.layer_3(x)
+#         x = F.relu(self.layer_4(x))
+#         x = F.normalize(x)
+#         return x
 
 
 if(__name__ == "__main__"):
@@ -48,7 +71,7 @@ if(__name__ == "__main__"):
 
     print(model)
 
-    for i_ in range(0,1000):
+    for i_ in range(0,100):
 
         myboard = hexPosition(size=size)
         while myboard.winner == 0:
@@ -100,4 +123,5 @@ if(__name__ == "__main__"):
     plt.title("Step-wise Loss")
     plt.xlabel("Epochs")
     plt.ylabel("Loss")
+    plt.savefig("./sv.png")
     plt.show()

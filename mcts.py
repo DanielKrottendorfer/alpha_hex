@@ -126,9 +126,9 @@ class mctsagent:
 			self.backup(node, turn, outcome)
 			num_rollouts += 1
 
-		stderr.write("Ran "+str(num_rollouts)+ " rollouts in " +\
-			str(time.time() - startTime)+" sec\n")
-		stderr.write("Node count: "+str(self.tree_size())+"\n")
+		#stderr.write("Ran "+str(num_rollouts)+ " rollouts in " +\
+		#	str(time.time() - startTime)+" sec\n")
+		#stderr.write("Node count: "+str(self.tree_size())+"\n")
 
 	def select_node(self):
 		"""
