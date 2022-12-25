@@ -1,3 +1,5 @@
+import numpy as np
+
 class hexPosition (object):
     """
     The class hexPosition stores data on a hex board position. The slots of an object are: size (an integer between 2 and 26), board (an array, 0=noStone, 1=whiteStone, 2=blackStone), winner (0=noWin, 1=whiteWin, 2=blackWin), and player (the player that has to make a moove, 1=white, 2=black).
@@ -239,7 +241,7 @@ class hexPosition (object):
                     print("The computer (Black) has won!")
                     self.blackWin(verbose=True)
                     
-    def recodeBlackAsWhite (self, printBoard=False, invert_colors=True):
+    def recodeBlackAsWhite (self):
         """
         Returns a board where black is recoded as white and wants to connect horizontally. This corresponds to flipping the board along the south-west to north-east diagonal and swapping colors.
         """
@@ -280,6 +282,11 @@ class hexPosition (object):
         
         self.whiteWin()
         return self.winner
+
+    def get_float_state(self):
+        t = np.array(self.board)
+
+        return t.astype(np.single)
 
     
 
