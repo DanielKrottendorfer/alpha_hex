@@ -285,7 +285,7 @@ class hexPosition (object):
 
     def get_float_state(self):
         t = np.array(self.board)
-
+        t = t/2.0;
         return t.astype(np.single)
 
     

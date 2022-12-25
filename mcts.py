@@ -5,6 +5,7 @@ from math import sqrt, log
 from copy import copy, deepcopy
 from sys import stderr
 from queue import Queue
+import numpy as np
 inf = float('inf')
 
 class node:
@@ -80,6 +81,18 @@ class mctsagent:
 		max_nodes = [n for n in self.root.children if n.N == max_value]
 		bestchild = random.choice(max_nodes)
 		return bestchild.move
+
+	def get_tensor_matrix(self):
+		
+		max_value = np.single(max(self.root.children, key = lambda n: n.N).N)
+		size = self.rootstate.size
+		Y = np.zeros(shape=(size,size),dtype=np.single)
+
+		for c in self.root.children:
+			m = c.move
+			Y[m[0]][m[1]] = np.single(c.N) / max_value
+		
+		return Y
 
 	def move(self, move):
 		"""
