@@ -9,57 +9,47 @@ import matplotlib.pyplot as plt
 import torch
 from torch import nn
 from torch import optim
+import os
 
 size = 5
 
 input_dim = size
-hidden_dim = 5
 output_dim = size
+
+model_path = "./model.pt";
 
 class NeuralNetwork(nn.Module):
     
 
     def __init__(self):
         super(NeuralNetwork, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels=1, out_channels=128,kernel_size=(3,3),padding=1)
-        self.conv2 = nn.Conv2d(in_channels=128, out_channels=8,  kernel_size=(1,1))
-        self.conv3 = nn.Conv2d(in_channels= 8, out_channels=1,  kernel_size=(1,1))
-        # self.layer_2 = nn.Linear(hidden_dim, hidden_dim)
-        # self.layer_3 = nn.Linear(hidden_dim, hidden_dim)
-        # self.layer_4 = nn.Linear(hidden_dim, output_dim)
+        self.fc1 = nn.Linear(size, 120)
+        self.fc2 = nn.Linear(120, 84)
+        self.fc3 = nn.Linear(84, size)
        
     def forward(self, x): 
-        x = x.view(1, 1, x.shape[0], x.shape[1])
-        x = F.leaky_relu(self.conv1(x))
-        x = F.leaky_relu(self.conv2(x))
-        x = F.relu(self.conv3(x))
-        # x = self.layer_2(x) 
-        # x = self.layer_3(x)
-        # x = F.relu(self.layer_4(x))
-        x = F.normalize(x)
-        return x[0][0]
+        y = F.relu(self.fc1(x))
+        y = F.relu(self.fc2(y))
+        y = F.relu(self.fc3(y))
+        y = F.normalize(y)
 
-# class NeuralNetwork(nn.Module):
-#     def __init__(self):
-#         super(NeuralNetwork, self).__init__()
-#         self.layer_1 = nn.Linear(input_dim, hidden_dim)
-#         self.layer_2 = nn.Linear(hidden_dim, hidden_dim)
-#         self.layer_3 = nn.Linear(hidden_dim, hidden_dim)
-#         self.layer_4 = nn.Linear(hidden_dim, output_dim)
-       
-#     def forward(self, x):
-#         x = F.relu(self.layer_1(x))
-#         x = self.layer_2(x) 
-#         x = self.layer_3(x)
-#         x = F.relu(self.layer_4(x))
-#         x = F.normalize(x)
-#         return x
+        for i in range(0,size):
+            for j in range(0,size):
+                if x[i][j] != 0.0:
+                    y[i][j] = 0.0
+
+        return y
 
 
 if(__name__ == "__main__"):
 
 
     model = NeuralNetwork()
+
+    if os.path.exists(model_path):
+        file = torch.load(model_path)
+        model.load_state_dict(file)
+        model.eval()
 
     learning_rate = 0.1
     loss_fn = nn.BCELoss()
@@ -71,7 +61,7 @@ if(__name__ == "__main__"):
 
     print(model)
 
-    for i_ in range(0,100):
+    for i_ in range(0,30):
 
         myboard = hexPosition(size=size)
         while myboard.winner == 0:
@@ -79,24 +69,12 @@ if(__name__ == "__main__"):
             t = torch.tensor(myboard.get_float_state())
             pred = model(t)
 
-            # b_i = (0,0)
-            # for i in range(1,size):
-            #     for j in range(1,size):
-            #         if pred[b_i[0]][b_i[1]] < pred[i][j]:
-            #             b_i = [i,j]
-
             ms = mcts.mctsagent(state = myboard)
-            ms.search(0.1)        
+            ms.search(0.2)        
             best_move = ms.best_move()            
-
-            # if best_move[0] == b_i[0] & best_move[1] == b_i[1]:
-            #     good_guesses.append(1.0)
-            # else:   
-            #     good_guesses.append(0.0)
 
             y = ms.get_tensor_matrix()
             y = torch.tensor(y)
-
 
             loss = loss_fn(pred, y)
             loss_values.append(loss.item())
@@ -118,8 +96,12 @@ if(__name__ == "__main__"):
 
             
         print(i_)
-        
+    
+
+    torch.save(model.state_dict(),model_path)
+
     plt.plot(np.array(loss_values))
+    plt.plot(np.array(good_guesses))
     plt.title("Step-wise Loss")
     plt.xlabel("Epochs")
     plt.ylabel("Loss")
