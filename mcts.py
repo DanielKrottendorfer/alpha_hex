@@ -84,14 +84,12 @@ class mctsagent:
 
 	def get_tensor_matrix(self):
 		
-		max_value = np.single(max(self.root.children, key = lambda n: n.N).N)
 		size = self.rootstate.size
 		Y = np.zeros(shape=(size,size),dtype=np.single)
-
 		for c in self.root.children:
 			m = c.move
-			Y[m[0]][m[1]] = np.single(c.N) / max_value
-		
+			Y[m[0]][m[1]] = np.single(c.N) 
+
 		return Y
 
 	def move(self, move):
@@ -126,6 +124,7 @@ class mctsagent:
 			self.backup(node, turn, outcome)
 			num_rollouts += 1
 
+		print(num_rollouts)
 		#stderr.write("Ran "+str(num_rollouts)+ " rollouts in " +\
 		#	str(time.time() - startTime)+" sec\n")
 		#stderr.write("Node count: "+str(self.tree_size())+"\n")

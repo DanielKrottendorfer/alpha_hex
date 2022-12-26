@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class hexPosition (object):
     """
     The class hexPosition stores data on a hex board position. The slots of an object are: size (an integer between 2 and 26), board (an array, 0=noStone, 1=whiteStone, 2=blackStone), winner (0=noWin, 1=whiteWin, 2=blackWin), and player (the player that has to make a moove, 1=white, 2=black).
@@ -285,7 +286,20 @@ class hexPosition (object):
 
     def get_float_state(self):
         t = np.array(self.board)
+
+        for i in range(0, self.size):
+            for j in range(0, self.size):
+                t[i][j] = temp(t[i][j])
+
         return t.astype(np.single)
+
+def temp(a):
+    if a == 2.0:
+        return 1.0
+    elif a == 1.0:
+        return -1.0
+    else:
+        return 0.0
 
     
 
