@@ -129,12 +129,12 @@ if(__name__ == "__main__"):
         
         loss_values.append(running_loss.item())
         print(running_loss.item())
+        if i % 10:
+            torch.save(model.state_dict(),model_path)
 
-    torch.save(model.state_dict(),model_path)
-
-    plt.plot(np.array(loss_values))
-    plt.title("Step-wise Loss")
-    plt.xlabel("Epochs")
-    plt.ylabel("Loss")
-    plt.savefig("./sv.png")
-    plt.show()
+            plt.plot(np.array(loss_values))
+            plt.title("Step-wise Loss")
+            plt.xlabel("Epochs")
+            plt.ylabel("Loss")
+            plt.savefig("./sv.png")
+            #plt.show()
