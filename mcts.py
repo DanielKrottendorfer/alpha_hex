@@ -109,7 +109,7 @@ class mctsagent:
 		self.rootstate.play(move)
 		self.root = node()
 
-	def search(self, time_budget):
+	def search(self, roll_outs):
 		"""
 		Search and update the search tree for a specified amount of time in secounds.
 		"""
@@ -117,7 +117,7 @@ class mctsagent:
 		num_rollouts = 0
 
 		#do until we exceed our time budget
-		while(time.time() - startTime <time_budget):
+		while(num_rollouts < roll_outs):
 			node, state = self.select_node()
 			turn = state.player
 			outcome = self.roll_out(state)

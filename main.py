@@ -14,7 +14,7 @@ import os
 import atexit
 import torch.nn.functional as F
 
-size = 3
+size = 4
 
 input_dim = size
 output_dim = size
@@ -99,11 +99,11 @@ if(__name__ == "__main__"):
             pred = model.forward(t)
 
             ms = mcts.mctsagent(state = myboard)
-            ms.search(1.0)        
+            ms.search(roll_outs=10000)        
             best_move = ms.best_move()            
 
-            y = ms.get_tensor_matrix()
-            y = F.softmax(torch.tensor(y))
+            y = torch.tensor(ms.get_tensor_matrix())
+            y = F.normalize(y)
 
             print(pred)
             print(y)
