@@ -91,7 +91,7 @@ def flip_v (board):
 def do_the_flippedi_flop(board):
         
     ms = mcts.mctsagent(state = board)
-    ms.search(100)
+    ms.search(200)
     m = ms.get_float_matrix()
     m = np.array(m / m.sum(),dtype=np.single)
     b = np.array(board.get_float_state(),dtype=np.single)
@@ -292,4 +292,6 @@ if __name__ == '__main__':
         v1.append(v)
 
         epochs += 1
+        
+        torch.save(model.state_dict(),model_path)
 
