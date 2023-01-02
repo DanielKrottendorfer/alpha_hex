@@ -28,11 +28,11 @@ class NeuralNetwork(nn.Module):
     def __init__(self):
         super(NeuralNetwork, self).__init__()
 
-        self.fl1 = nn.Linear(3,3)
-        self.conv1 = nn.Conv2d(1,125,kernel_size=(3,3),padding=1,bias=False)
+        self.fl1 = nn.Linear(size,size)
+        self.conv1 = nn.Conv2d(1,125,kernel_size=(size,size),padding=1,bias=False)
         self.conv2 = nn.Conv2d(125,80,kernel_size=(1,1),padding=0,bias=False)
         self.conv3 = nn.Conv2d(80,1,kernel_size=(1,1),padding=0)
-        self.fl2 = nn.Linear(3,3)
+        self.fl2 = nn.Linear(size,size)
 
        
     def forward(self, x): 
@@ -40,7 +40,7 @@ class NeuralNetwork(nn.Module):
         # y = F.relu(self.conv1(y))
         # y = y.view(y.shape[1])
         # y = F.relu(self.fc1(y))
-        # y = torch.reshape(y,(3,3))
+        # y = torch.reshape(y,(size,size))
         # print(y)
 
         y = self.fl1(x)
@@ -83,7 +83,7 @@ if(__name__ == "__main__"):
 
     learning_rate = 0.2
     loss_fn = nn.MSELoss()
-    optimizer = optim.SGD(model.parameters(),lr = learning_rate)
+    optimizer = optim.Adam(model.parameters(),lr = learning_rate)
 
 
     print(model)
@@ -102,7 +102,7 @@ if(__name__ == "__main__"):
             ms.search(roll_outs=10000)        
             best_move = ms.best_move()            
 
-            y = torch.tensor(ms.get_tensor_matrix())
+            y = torch.tensor(ms.get_float_matrix())
             y = F.normalize(y)
 
             print(pred)

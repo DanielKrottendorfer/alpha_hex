@@ -18,7 +18,7 @@ if(__name__ == "__main__"):
             ms.search(2.0)        
             best_move = ms.best_move()            
 
-            y = torch.nn.functional.normalize( torch.tensor(ms.get_tensor_matrix()))
+            y = torch.nn.functional.normalize( torch.tensor(ms.get_float_matrix()))
             print(y)
             print()
 

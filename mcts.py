@@ -82,7 +82,7 @@ class mctsagent:
 		bestchild = random.choice(max_nodes)
 		return bestchild.move
 
-	def get_tensor_matrix(self):
+	def get_float_matrix(self):
 		
 		size = self.rootstate.size
 		Y = np.zeros(shape=(size,size),dtype=np.single)
@@ -124,7 +124,6 @@ class mctsagent:
 			self.backup(node, turn, outcome)
 			num_rollouts += 1
 
-		print(num_rollouts)
 		#stderr.write("Ran "+str(num_rollouts)+ " rollouts in " +\
 		#	str(time.time() - startTime)+" sec\n")
 		#stderr.write("Node count: "+str(self.tree_size())+"\n")

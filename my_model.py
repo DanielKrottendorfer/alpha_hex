@@ -28,13 +28,13 @@ class OthelloNNet(nn.Module):
         self.fc2 = nn.Linear(1024, channel_num)
         self.fc_bn2 = nn.BatchNorm1d(channel_num)
 
-        self.fc3 = nn.Linear(channel_num, size*size)
+        self.fc3 = nn.Linear(channel_num, size)
 
         self.training = True
 
-    def forward(self, s):
+    def forward(self, x):
         #                                                           s: batch_size x board_x x board_x
-        s = s.view(-1, 1, self.board_x, self.board_x)                # batch_size x 1 x board_x x board_x
+        s = x.view(-1, 1, self.board_x, self.board_x)                # batch_size x 1 x board_x x board_x
         s = F.relu(self.bn1(self.conv1(s)))                          # batch_size x num_channels x board_x x board_x
         s = F.relu(self.bn2(self.conv2(s)))                          # batch_size x num_channels x board_x x board_x
         s = F.relu(self.bn3(self.conv3(s)))                          # batch_size x num_channels x (board_x-2) x (board_x-2)
@@ -46,6 +46,12 @@ class OthelloNNet(nn.Module):
         s = F.dropout(F.relu(self.fc_bn1(self.fc1(s))),training=self.training)  # batch_size x 1024
         s = F.dropout(F.relu(self.fc_bn2(self.fc2(s))), training=self.training)  # batch_size x channel_num
 
-        pi = self.fc3(s)       
-        pi = F.softmax(torch.reshape(pi,(self.board_x,self.board_x)))
+        pi = self.fc3(s)
+
+        for i in range(0,self.board_x):
+            for j in range(0,self.board_x):
+                if x[i,j] == 0.0:
+                    pi[i,j] = 0.0
+
+        pi = F.normalize(pi)
         return pi

@@ -21,12 +21,13 @@ class hexPosition (object):
         self.winner = 0
     
     def play(self,move):
-        self.makeMoove(move, self.player)
+        return self.makeMoove(move, self.player)
 
     def playRandom (self):
         from random import choice
         chosen = choice(self.getActionSpace())
-        self.play(chosen)
+        b = self.play(chosen)
+        return b
 
     def makeMoove (self, coord, player_num):
         """
@@ -36,8 +37,8 @@ class hexPosition (object):
         assert (player_num == self.player), "It is not this player's turn."
         self.board[coord[0]][coord[1]] = player_num
         self.player = 1 if player_num==2 else 2
-        self.whiteWin
-        self.blackWin
+        return self.whiteWin() | self.blackWin()
+        
                 
     def printBoard (self, invert_colors=True):
         """
@@ -255,6 +256,7 @@ class hexPosition (object):
                 if self.board[self.size-1-j][self.size-1-i] == 2:
                     flipped_board[i][j] = 1
         return flipped_board
+    
         
     def recodeCoordinates (self, coordinates):
         """
