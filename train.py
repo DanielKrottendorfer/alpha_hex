@@ -10,7 +10,7 @@ import torch
 from torch import nn
 from torch import optim
 import os
-
+import multiprocessing
 import atexit
 
 import random as R
@@ -130,6 +130,74 @@ def random_board(rand_moves):
         else:
             return myboard
 
+def new_set(pid,return_dict):
+    r_moves = R.randint(0,size)
+    r_board = random_board(r_moves)
+
+    x_ = list()
+    pi_ = list()
+    v_ = list()
+
+    a = 1.0
+
+    while True:
+
+        ms = mcts.mctsagent(state = r_board)
+        ms.search(800)
+        best_move = ms.best_move()
+        
+        if r_board.player == 2:
+            if r_board.play(best_move):
+                a = -1.0
+                break
+            continue
+
+        m = ms.get_float_matrix()
+        m = np.array(m / m.sum(),dtype=np.single)
+        b = np.array(r_board.get_float_state(),dtype=np.single)
+
+        x_.append(b)
+        pi_.append(m)
+        v_.append(0.0)
+        
+        if r_board.play(best_move):
+            a = 1.0
+            break
+    
+    for i in reversed(range(0,len(x_))):
+        v_[i] = a
+
+    result = list(),list(),list()
+
+    for i in range(0,len(x_)):
+        result[0].extend(do_the_flippiti_flip(x_[i]))
+        result[1].extend(do_the_flippiti_flip(pi_[i]))
+        result[2].extend([v_[i],v_[i],v_[i],v_[i]])
+    
+    return_dict.append(result)
+
+def gen_trainingset_pool(s):
+    
+    manager = multiprocessing.Manager()
+    return_dict = manager.list()
+    jobs = []
+    for i in range(s):
+        p = multiprocessing.Process(target=new_set, args=(i,return_dict))
+        jobs.append(p)
+        p.start()
+
+    for proc in jobs:
+        proc.join()
+
+    print("Program finished!")
+    
+    temp = list(),list(),list()
+    for r in return_dict:
+        temp[0].extend(r[0])
+        temp[1].extend(r[1])
+        temp[2].extend(r[2])
+    return temp
+
 
 def gen_trainingset(set_size):
 
@@ -149,7 +217,7 @@ def gen_trainingset(set_size):
         while True:
 
             ms = mcts.mctsagent(state = r_board)
-            ms.search(100)
+            ms.search(800)
             best_move = ms.best_move()
             
             if r_board.player == 2:
@@ -318,7 +386,7 @@ if __name__ == '__main__':
 
         #model_backup = copy.deepcopy(model)
 
-        (x,y,v_) = gen_trainingset(5)
+        (x,y,v_) = gen_trainingset_pool(8)
         for i in range(0,len(x)):
             pred,v = model.forward(torch.tensor(x[i]))
             loss = loss_fn(pred, torch.tensor(y[i]))
