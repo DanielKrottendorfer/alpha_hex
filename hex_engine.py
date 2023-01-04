@@ -297,9 +297,9 @@ class hexPosition (object):
 
 def temp(a):
     if a == 2.0:
-        return 1.0
-    elif a == 1.0:
         return -1.0
+    elif a == 1.0:
+        return 1.0
     else:
         return 0.0
 

@@ -88,18 +88,24 @@ def flip_v (board):
             flipped_board[j][i] = board[j][s-1-i]
     return flipped_board
 
-def do_the_flippedi_flop(board):
+# def do_the_flippedi_flop(board):
         
-    ms = mcts.mctsagent(state = board)
-    ms.search(200)
-    m = ms.get_float_matrix()
-    m = np.array(m / m.sum(),dtype=np.single)
-    b = np.array(board.get_float_state(),dtype=np.single)
+#     ms = mcts.mctsagent(state = board)
+#     ms.search(200)
+#     m = ms.get_float_matrix()
+#     m = np.array(m / m.sum(),dtype=np.single)
+#     b = np.array(board.get_float_state(),dtype=np.single)
 
-    x = (b,flip_h(b), flip_v(b), flip_v(flip_h(b)))
-    y = (m,flip_h(m), flip_v(m), flip_v(flip_h(m)))
+#     x = (b,flip_h(b), flip_v(b), flip_v(flip_h(b)))
+#     y = (m,flip_h(m), flip_v(m), flip_v(flip_h(m)))
 
-    return (x,y)
+#     return (x,y)
+
+def do_the_flippiti_flip(matrix):
+    
+    b = matrix
+    x = [b,flip_h(b), flip_v(b), flip_v(flip_h(b))]
+    return x
 
 def random_board(rand_moves):
 
@@ -118,34 +124,56 @@ def random_board(rand_moves):
 
 def gen_trainingset(set_size):
 
-    training_set = list()
+    training_set = (list(),list(),list())
 
     for _ in range(0,set_size):
 
-        r_moves = R.randint(0,size*2)
+        r_moves = R.randint(0,size)
         r_board = random_board(r_moves)
 
-        training_sub_set = do_the_flippedi_flop(r_board)
+        x_ = list()
+        pi_ = list()
+        v_ = list()
 
-        is_duplicat = False
-        for t in training_set:
-            if compare_matrix(training_sub_set[0][0],t[0][0]):
-                is_duplicat = True
+        while True:
+
+            ms = mcts.mctsagent(state = r_board)
+            ms.search(100)
+            m = ms.get_float_matrix()
+            m = np.array(m / m.sum(),dtype=np.single)
+            b = np.array(r_board.get_float_state(),dtype=np.single)
+
+            is_duplicat = False
+            for t in training_set[0]:
+                if compare_matrix(b,t):
+                    is_duplicat = True
+                    break
+            
+            if not(is_duplicat):
+                x_.append(b)
+                pi_.append(m)
+                v_.append(0.0)
+            
+            best_move = ms.best_move()
+            if r_board.play(best_move):
                 break
-        
-        if not(is_duplicat):
-            training_set.append(training_sub_set)
+
+            r_board.board = r_board.recodeBlackAsWhite()
+            r_board.player = 1
+
+        a = 1.0
+        for i in reversed(range(0,len(x_))):
+            v_[i] = a
+            a *= -1.0
 
 
-    x = list()
-    y = list()
-    for t in training_set:
-        for i in range(0,len(t[0])):
-            x.append(t[0][i])
-            y.append(t[1][i])
+        for i in range(0,len(x_)):
+            training_set[0].extend(do_the_flippiti_flip(x_[i]))
+            training_set[1].extend(do_the_flippiti_flip(pi_[i]))
+            training_set[2].extend([v_[i],v_[i],v_[i],v_[i]])
+            
     
-    return (x,y)
-
+    return training_set
 
 
 def self_play(m1,m2):
@@ -176,6 +204,7 @@ def self_play(m1,m2):
                     m1_wins += 1
                 else:
                     m2_wins += 1
+                #board.printBoard()
                 break
             else:
                 bs = board.recodeBlackAsWhite()
@@ -232,7 +261,7 @@ def mctsMatch(m):
                     max_i = actions[j]
             
             if board.play(max_i):
-                board.printBoard()
+                #board.printBoard()
                 return 1
         else:
             
@@ -252,9 +281,9 @@ v1 = list()
 v = 0
 
 def exit_handler():
-    torch.save(model.state_dict(),model_path)
+    #torch.save(model.state_dict(),model_path)
     
-    plt.plot(np.array(loss_values))
+    plt.plot(np.array(v1))
     plt.title("Step-wise Loss")
     plt.xlabel("Epochs")
     plt.ylabel("Loss")
@@ -277,7 +306,7 @@ if __name__ == '__main__':
 
         model_backup = copy.deepcopy(model)
 
-        (x,y) = gen_trainingset(30)
+        (x,y,v_) = gen_trainingset(10)
         for i in range(0,len(x)):
             pred = model.forward(torch.tensor(x[i]))
             loss = loss_fn(pred, torch.tensor(y[i]))
@@ -294,4 +323,11 @@ if __name__ == '__main__':
         epochs += 1
         
         torch.save(model.state_dict(),model_path)
+        
+        plt.plot(np.array(v1))
+        plt.title("Step-wise Loss")
+        plt.xlabel("Epochs")
+        plt.ylabel("Loss")
+        plt.savefig("./sv.png")
+
 
