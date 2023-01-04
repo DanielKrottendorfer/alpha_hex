@@ -88,7 +88,7 @@ if __name__ == '__main__':
 
     board = hex_engine.hexPosition(size=size)
 
-    machine = False
+    machine = True
 
 
 

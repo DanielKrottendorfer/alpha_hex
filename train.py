@@ -386,7 +386,7 @@ if __name__ == '__main__':
 
         #model_backup = copy.deepcopy(model)
 
-        (x,y,v_) = gen_trainingset_pool(8)
+        (x,y,v_) = gen_trainingset(5)
         for i in range(0,len(x)):
             pred,v = model.forward(torch.tensor(x[i]))
             loss = loss_fn(pred, torch.tensor(y[i]))
