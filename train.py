@@ -12,50 +12,59 @@ from torch import optim
 import os
 
 import atexit
-import torch.nn.functional as F
 
 import random as R
 
 import copy
 
-import my_model
-
-size = 5
-
+size = 6
+channel_num = 512
 
 class NeuralNetwork(nn.Module):
     
 
     def __init__(self):
         super(NeuralNetwork, self).__init__()
+        self.conv1 = nn.Conv2d(1, channel_num, 3, stride=1, padding=1)
+        self.conv2 = nn.Conv2d(channel_num, channel_num, 3, stride=1, padding=1)
+        self.conv3 = nn.Conv2d(channel_num, channel_num, 3, stride=1)
+        self.conv4 = nn.Conv2d(channel_num, channel_num, 3, stride=1)
 
-        self.fl1 = nn.Linear(size,size)
-        self.conv1 = nn.Conv2d(1,125,kernel_size=3,padding=1)
-        self.conv2 = nn.Conv2d(125,125,kernel_size=3,padding=1)
-        self.conv3 = nn.Conv2d(125,1,kernel_size=3,padding=1)
+        self.bn1 = nn.BatchNorm2d(channel_num)
+        self.bn2 = nn.BatchNorm2d(channel_num)
+        self.bn3 = nn.BatchNorm2d(channel_num)
+        self.bn4 = nn.BatchNorm2d(channel_num)
 
+        self.fc1 = nn.Linear(channel_num*(size-4)*(size-4), 1024)
+        self.fc_bn1 = nn.BatchNorm1d(1024)
+
+        self.fc2 = nn.Linear(1024, 512)
+        self.fc_bn2 = nn.BatchNorm1d(512)
+
+        self.fc3 = nn.Linear(512, size*size)
+
+        self.fc4 = nn.Linear(512, 1)
+
+    def forward(self, x):
+        #                                                           s: batch_size x board_x x board_y
+        s = x.view(-1, 1, size, size)                # batch_size x 1 x board_x x board_y
+        s = F.relu(self.bn1(self.conv1(s)))                          # batch_size x num_channels x board_x x board_y
+        s = F.relu(self.bn2(self.conv2(s)))                          # batch_size x num_channels x board_x x board_y
+        s = F.relu(self.bn3(self.conv3(s)))                          # batch_size x num_channels x (board_x-2) x (board_y-2)
+        s = F.relu(self.bn4(self.conv4(s)))                          # batch_size x num_channels x (board_x-4) x (board_y-4)
+        s = s.view(-1, channel_num*(size-4)*(size-4))
+
+        s = F.dropout(F.relu(self.fc1(s)), p=0.1, training=True)  # batch_size x 1024
+        s = F.dropout(F.relu(self.fc2(s)), p=0.1, training=True)  # batch_size x 512
+
+        pi = self.fc3(s)                                                                  # batch_size x action_size
+        v = self.fc4(s)           
         
-        self.bn1 = nn.BatchNorm2d(125)
-        self.bn2 = nn.BatchNorm2d(125)
-
-        self.fl2 = nn.Linear(size,size)
-
-       
-    def forward(self, x): 
-
-        y = self.fl1(x)
-        y = y.view(1,1,y.shape[0],y.shape[1])
-        y = F.relu(self.bn1(self.conv1(y)))
-        y = F.relu(self.bn2(self.conv2(y)))
-        y = F.relu(self.conv3(y))
-
-        y = y.view(y.shape[2],y.shape[3])
-        y = F.softmax(self.fl2(y),dim = 0)
-        m = torch.sum(y)
-        y = y/m
-        
-        return y
-
+        pi = pi.view(size,size)       
+        pi = pi.masked_fill(x != 0.0, 0.0)
+        m = pi.sum()
+        pi = pi/m
+        return pi, torch.tanh(v)
 def print_list(board):
     for line in board:
         print(line)
@@ -135,10 +144,20 @@ def gen_trainingset(set_size):
         pi_ = list()
         v_ = list()
 
+        a = 1.0
+
         while True:
 
             ms = mcts.mctsagent(state = r_board)
             ms.search(100)
+            best_move = ms.best_move()
+            
+            if r_board.player == 2:
+                if r_board.play(best_move):
+                    a = -1.0
+                    break
+                continue
+
             m = ms.get_float_matrix()
             m = np.array(m / m.sum(),dtype=np.single)
             b = np.array(r_board.get_float_state(),dtype=np.single)
@@ -154,24 +173,18 @@ def gen_trainingset(set_size):
                 pi_.append(m)
                 v_.append(0.0)
             
-            best_move = ms.best_move()
             if r_board.play(best_move):
+                a = 1.0
                 break
-
-            r_board.board = r_board.recodeBlackAsWhite()
-            r_board.player = 1
-
-        a = 1.0
+        
         for i in reversed(range(0,len(x_))):
             v_[i] = a
-            a *= -1.0
 
 
         for i in range(0,len(x_)):
             training_set[0].extend(do_the_flippiti_flip(x_[i]))
             training_set[1].extend(do_the_flippiti_flip(pi_[i]))
             training_set[2].extend([v_[i],v_[i],v_[i],v_[i]])
-            
     
     return training_set
 
@@ -191,7 +204,7 @@ def self_play(m1,m2):
             play = m1 if ii%2 > 0 else m2
             
             b = np.array(board.get_float_state(),dtype=np.single)
-            pred = play.forward(torch.tensor(b))
+            pred,v = play.forward(torch.tensor(b))
             actions = board.getActionSpace()
             
             max_i = actions[0]
@@ -214,7 +227,7 @@ def self_play(m1,m2):
             ii += 1
     print("wins",m1_wins," ",m2_wins)
 
-    if m1_wins >= m2_wins:
+    if m1_wins > m2_wins:
         return m1
     else:
         return m2
@@ -252,7 +265,7 @@ def mctsMatch(m):
         if i%2 == 0:
             
             b = np.array(board.get_float_state(),dtype=np.single)
-            pred = m.forward(torch.tensor(b))
+            pred, v = m.forward(torch.tensor(b))
             actions = board.getActionSpace()
             
             max_i = actions[0]
@@ -273,8 +286,7 @@ def mctsMatch(m):
                 board.printBoard()
                 return -1
 
-import othello
-model =  othello.OthelloNNet(size=size)
+model =  NeuralNetwork()
 model_path = "./model.pt"
 loss_values = []
 v1 = list()
@@ -283,7 +295,7 @@ v = 0
 def exit_handler():
     #torch.save(model.state_dict(),model_path)
     
-    plt.plot(np.array(v1))
+    plt.plot(np.array(loss_values))
     plt.title("Step-wise Loss")
     plt.xlabel("Epochs")
     plt.ylabel("Loss")
@@ -292,7 +304,7 @@ def exit_handler():
 
 if __name__ == '__main__':
 
-    atexit.register(exit_handler)
+    #atexit.register(exit_handler)
 
     if os.path.exists(model_path):
         file = torch.load(model_path)
@@ -304,19 +316,23 @@ if __name__ == '__main__':
     epochs = 0
     while True:
 
-        model_backup = copy.deepcopy(model)
+        #model_backup = copy.deepcopy(model)
 
-        (x,y,v_) = gen_trainingset(10)
+        (x,y,v_) = gen_trainingset(5)
         for i in range(0,len(x)):
-            pred = model.forward(torch.tensor(x[i]))
+            pred,v = model.forward(torch.tensor(x[i]))
             loss = loss_fn(pred, torch.tensor(y[i]))
-            loss.backward()
+            loss_v = loss_fn(v,torch.tensor(v_[i]))
+
+            total_loss = loss + loss_v
+
+            total_loss.backward()
             loss_values.append(loss.item())
             optimizer.step()
-            #print(loss.item())
+            print(loss.item(),'\n', loss_v.item(),'\n')
 
         print(loss)
-        model = self_play(model,model_backup)
+        #model = self_play(model,model_backup)
         v += mctsMatch(model)
         v1.append(v)
 
@@ -324,7 +340,7 @@ if __name__ == '__main__':
         
         torch.save(model.state_dict(),model_path)
         
-        plt.plot(np.array(v1))
+        plt.plot(np.array(loss_values))
         plt.title("Step-wise Loss")
         plt.xlabel("Epochs")
         plt.ylabel("Loss")

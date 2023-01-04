@@ -32,7 +32,7 @@ class OthelloNNet(nn.Module):
         self.training = True
 
     def forward(self, x):
-
+        print(x)
         # mask = torch.tensor(np.zeros((self.board_x,self.board_x),dtype=np.int32))
         # for i in range(self.board_x):
         #     for j in range(self.board_x):
