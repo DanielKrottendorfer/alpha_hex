@@ -5,53 +5,12 @@ import torch.nn.functional as F
 import hex_engine
 import numpy as np
 import mcts
-size = 6
-channel_num = 512
 
-class NeuralNetwork(nn.Module):
-    
 
-    def __init__(self):
-        super(NeuralNetwork, self).__init__()
-        self.conv1 = nn.Conv2d(1, channel_num, 3, stride=1, padding=1)
-        self.conv2 = nn.Conv2d(channel_num, channel_num, 3, stride=1, padding=1)
-        self.conv3 = nn.Conv2d(channel_num, channel_num, 3, stride=1)
-        self.conv4 = nn.Conv2d(channel_num, channel_num, 3, stride=1)
+import train
 
-        self.bn1 = nn.BatchNorm2d(channel_num)
-        self.bn2 = nn.BatchNorm2d(channel_num)
-        self.bn3 = nn.BatchNorm2d(channel_num)
-        self.bn4 = nn.BatchNorm2d(channel_num)
 
-        self.fc1 = nn.Linear(channel_num*(size-4)*(size-4), 1024)
-        self.fc_bn1 = nn.BatchNorm1d(1024)
 
-        self.fc2 = nn.Linear(1024, 512)
-        self.fc_bn2 = nn.BatchNorm1d(512)
-
-        self.fc3 = nn.Linear(512, size*size)
-
-        self.fc4 = nn.Linear(512, 1)
-
-    def forward(self, x):
-        #                                                           s: batch_size x board_x x board_y
-        s = x.view(-1, 1, size, size)                # batch_size x 1 x board_x x board_y
-        s = F.relu(self.bn1(self.conv1(s)))                          # batch_size x num_channels x board_x x board_y
-        s = F.relu(self.bn2(self.conv2(s)))                          # batch_size x num_channels x board_x x board_y
-        s = F.relu(self.bn3(self.conv3(s)))                          # batch_size x num_channels x (board_x-2) x (board_y-2)
-        s = F.relu(self.bn4(self.conv4(s)))                          # batch_size x num_channels x (board_x-4) x (board_y-4)
-        s = s.view(-1, channel_num*(size-4)*(size-4))
-
-        s = F.dropout(F.relu(self.fc1(s)), p=0.1, training=True)  # batch_size x 1024
-        s = F.dropout(F.relu(self.fc2(s)), p=0.1, training=True)  # batch_size x 512
-
-        pi = self.fc3(s)                                                                  # batch_size x action_size
-        v = self.fc4(s)           
-        pi = pi.view(size,size)       
-        pi = pi.masked_fill(x != 0.0, 0.0)
-        m = pi.sum()
-        pi = pi/m
-        return pi, torch.tanh(v)
 
 def translator (string):
     #This function translates human terminal input into the proper array indices.
@@ -77,8 +36,8 @@ def translator (string):
             if number1 == "{}".format(i):
                 number_translated = i-1
     return (number_translated, letter_translated)
-
-model =  NeuralNetwork()
+import my_model
+model =  my_model.OthelloNNet(train.size)
 if __name__ == '__main__':
     
     model_path = "./model.pt"
@@ -86,12 +45,9 @@ if __name__ == '__main__':
     model.load_state_dict(file)
     model.eval()
 
-    board = hex_engine.hexPosition(size=size)
+    board = hex_engine.hexPosition(size=train.size)
 
-    machine = True
-
-
-
+    machine = False
 
     while True:
         
@@ -110,7 +66,7 @@ if __name__ == '__main__':
         else:
             
             ms = mcts.mctsagent(state = board)
-            ms.search(roll_outs=800)        
+            ms.search(roll_outs=900)        
             best_move = ms.best_move()            
 
             if board.play(best_move):
